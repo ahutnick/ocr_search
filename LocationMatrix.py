@@ -1,4 +1,7 @@
 # File manipulation - remove duplicates
+# Creates nested list from a playbill text file, with each word an entry in a
+# line list, and each line an entry in the matrix list. Also includes helper
+# functions for search.
 
 import os
 import re
@@ -6,30 +9,42 @@ import re
 
 class LocationMatrix(object):
     def __init__(self, file):
+        # Text, parsed into lines
         self.text = self.file_opener(file)
+        # Lines parsed into words
         self.matrix = self.matrix_maker(self.text)
+        # Assigns each word its number, and stores its location
         self.values = self.get_values()
+        # number of words
         self.words = len(self.values)
 
+    # Calculates number of words from percent
     def calc_frac_percent(self, percent):
         return int(self.words * percent)
 
+    # Checks to see if word[s] fall[s] before or after anchor
     def check_context(self, index, loc):
+        # Loop through context locations
         for num in index:
+            # Check to see if the row numbers match
             val = self.values[num]
             if val[0] == loc:
                 return True
         return False
 
+    # Check to see if anchor and context are together
     def check_together(self, index):
         matrix = self.matrix
         for num in index:
             val = self.values[num]
+            # is the context found in the last entry of the first row
+            # Or the first entry of the last row?
             if matrix[val[0]][val[1]] == matrix[0][len(matrix[0]) - 1]\
                     or matrix[val[0]][val[1]] == matrix[1][0]:
                 return True
         return False
 
+    # Check together when you only have before or after anchor
     def check_together_frac(self, index, test):
         matrix = self.matrix
         for num in index:
@@ -44,6 +59,20 @@ class LocationMatrix(object):
                     return True
                 return False
 
+    def file_opener(self, file):
+        file = os.path.expanduser(file)
+        text = ""
+        with open(file, "r") as filename:
+            text = filename.readlines()
+            text = [line.rstrip('\n') for line in text]
+            text = [x for x in text if x != ""]
+            for line in range(len(text)):
+                patt = re.compile("\.\.\.*")
+                text[line] = re.split(patt, text[line])
+                text[line] = " ".join(text[line])
+        return text
+
+    # Returns matrix as consisting of strings, replacing anchor word with a ^.
     def get_chars(self, index):
         matrix = self.matrix
         val = self.values[index]
@@ -131,15 +160,6 @@ class LocationMatrix(object):
                 count += 1
         return values
 
-    def file_opener(self, file):
-        file = os.path.expanduser(file)
-        text = ""
-        with open(file, "r") as filename:
-            text = filename.readlines()
-            text = [line.rstrip('\n') for line in text]
-            text = [x for x in text if x != ""]
-        return text
-
     def matrix_maker(self, text):
         matrix = []
         for line in text:
@@ -156,10 +176,12 @@ class LocationMatrix(object):
 
     def print_matrix(self):
         for line in self.matrix:
-            for word in line:
-                print ("[{}] ".format(word)),
-            print
-        print (self.words)
+            print (" ".join(line))
+        print ("Total words: {}".format(self.words))
+
+    def print_line(self, index):
+        val = self.values[index]
+        print (self.matrix[val[0]])
 
     def refresh_matrix(self):
         self.matrix = self.matrix_maker(self.text)
